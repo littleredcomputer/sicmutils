@@ -447,10 +447,27 @@
 (defmethod remainder :default [n d]
   (remainder-default n d))
 
+;;; FIXME?: is the multi-argument definition required? [[gcd]], I don't fully
+;;; understand what [[add]] is doing. Where do I look?
 (defgeneric gcd 2
   "Returns the [greatest common
   divisor](https://en.wikipedia.org/wiki/Greatest_common_divisor) of the two
-  inputs `a` and `b`.")
+  inputs `a` and `b`."
+  {:name '-gcd}) ;;; FIXME?: not sure if this is right
+
+(defn gcd
+  "FIXME: add an appropiate comment"
+  [x y]
+  (if (zero? y)
+    x
+    (recur y (mod x y))))
+
+(defn -gcd
+  ([] 1)
+  ([x] x)
+  ([x y] (gcd x y))
+  ([x y & rest]
+   (reduce gcd (gcd x y) rest)))
 
 (defgeneric lcm 2
   "Returns the [least common
