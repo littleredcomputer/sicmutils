@@ -71,6 +71,77 @@
          :a1*
          :a2*)))
 
+;; The following two functions expand and contract the sine and cosine sum
+;; identities.
+
+(def trig-difference-expand
+  (rule-simplifier
+   (ruleset
+    (cos (+ :x :y))
+    => (+ (* (cos :x) (cos :y)) (* -1 (sin :x) (sin :y)))
+
+    (sin (+ :x (* -1 :y)))
+    => (+ (* (sin :x) (cos :y)) (* -1 (cos :x) (sin :y)))
+
+    (sin (+ :x :y))
+    => (+ (* (sin :x) (cos :y)) (* (cos :x) (sin :y)))
+
+    (cos (+ :x (* -1 :y)))
+    => (+ (* (cos :x) (cos :y)) (* (sin :x) (sin :y))))))
+
+(def trig-difference-contract
+  (rule-simplifier
+   (ruleset
+    (* :l* (expt (sin :x) :n) :r*)
+    => (* :l* (:?? #(repeat (% :n) (list 'sin (% :x)))) :r*)
+
+    (* :l* (expt (cos :x) :n) :r*)
+    => (* :l* (:?? #(repeat (% :n) (list 'cos (% :x)))) :r*)
+
+    ;; sin(x - y) == sin(x)cos(y) - cos(x)sin(y)
+    (+ :ol*
+       (* :l* (sin :x) :m* (cos :y) :r*)
+       :om*
+       (* -1 :l* (cos :x) :m* (sin :y) :r*)
+       :or*)
+    => (+ :ol*
+          (* :l* (sin (+ :x (* -1 :y))) :m* :r*)
+          :om*
+          :or*)
+
+    ;; cos(x + y) == cos(x)cos(y) - sin(x)sin(y)
+    (+ :ol*
+       (* :l* (cos :x) :m* (cos :y) :r*)
+       :om*
+       (* -1 :l* (sin :x) :m* (sin :y) :r*)
+       :or*)
+    => (+ :ol*
+          (* :l* (cos (+ :x :y)) :m* :r*)
+          :om*
+          :or*)
+
+    ;; sin(x + y) == sin(x)cos(y) + cos(x)sin(y)
+    (+ :ol*
+       (* :l* (sin :x) :m* (cos :y) :r*)
+       :om*
+       (* :l* (cos :x) :m* (sin :y) :r*)
+       :or*)
+    => (+ :ol*
+          (* :l* (sin (+ :x :y)) :m* :r*)
+          :om*
+          :or*)
+
+    ;; cos(x - y) == cos(x)cos(y) + sin(x)sin(y)
+    (+ :ol*
+       (* :l* (cos :x) :m* (cos :y) :r*)
+       :om*
+       (* :l* (sin :x) :m* (sin :y) :r*)
+       :or*)
+    => (+ :ol*
+          (* :l* (cos (+ :x (* -1 :y))) :m* :r*)
+          :om*
+          :or*))))
+
 (def simplify-square-roots
   (rule-simplifier
    (ruleset
@@ -152,10 +223,7 @@
 
     (sqrt (/ :x :y)) => (/ (sqrt :x) (sqrt :y))
 
-    (sqrt (/ :x :y :ys*)) => (/ (sqrt :x) (sqrt (* :y :ys*)))
-
-    )))
-
+    (sqrt (/ :x :y :ys*)) => (/ (sqrt :x) (sqrt (* :y :ys*))))))
 
 (def sqrt-contract
   (rule-simplifier

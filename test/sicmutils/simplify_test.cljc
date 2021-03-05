@@ -276,3 +276,67 @@
                                    (g/+ (g/expt 'y_1 2)
                                         (g/* 2 'y_1 'y_2)
                                         (g/expt 'y_2 2)))))))))))
+
+
+(require '[sicmutils.env :as e]
+         '[sicmutils.simplify.rules :as sr])
+
+#_
+(clojure.pprint/pprint
+ (g/simplify
+  ((e/compose (T 'm_1 'm_2)
+              (e/F->C
+               (angles->rect 'l_1 'l_2)))
+   (s/up 't
+         (s/up 'theta_1 'theta_2)
+         (s/up 'thetadot_1 'thetadot_2)))))
+
+;; GOOD:
+(comment
+  '(up (/ (+ (* -1 l_1 m_2 (expt thetadot_1 2) (cos (+ theta_1 (* -1 theta_2))) (sin (+ theta_1 (* -1 theta_2))))
+             (* -1 l_2 m_2 (expt thetadot_2 2) (sin (+ theta_1 (* -1 theta_2))))
+             (* g m_2 (sin theta_2) (cos (+ theta_1 (* -1 theta_2))))
+             (* -1 g m_1 (sin theta_1))
+             (* -1 g m_2 (sin theta_1)))
+          (+ (* l_1 m_2 (expt (sin (+ theta_1 (* -1 theta_2))) 2))
+             (* l_1 m_1)))
+       (/ (+ (* l_2 m_2 (expt thetadot_2 2) (cos (+ theta_1 (* -1 theta_2))) (sin (+ theta_1 (* -1 theta_2))))
+             (* l_1 m_1 (expt thetadot_1 2) (sin (+ theta_1 (* -1 theta_2))))
+             (* l_1 m_2 (expt thetadot_1 2) (sin (+ theta_1 (* -1 theta_2))))
+             (* g m_1 (sin theta_1) (cos (+ theta_1 (* -1 theta_2))))
+             (* g m_2 (sin theta_1) (cos (+ theta_1 (* -1 theta_2))))
+             (* -1 g m_1 (sin theta_2))
+             (* -1 g m_2 (sin theta_2)))
+          (+ (* l_2 m_2 (expt (sin (+ theta_1 (* -1 theta_2))) 2))
+             (* l_2 m_1))))
+
+  ;; BAD:
+  '(up (/ (+ (* -2 l_1 m_2 (expt thetadot_1 2) (expt (cos theta_1) 2) (sin theta_2) (cos theta_2))
+             (* 2N l_1 m_2 (expt thetadot_1 2) (cos theta_1) (sin theta_1) (expt (cos theta_2) 2))
+             (* -1 l_1 m_2 (expt thetadot_1 2) (cos theta_1) (sin theta_1))
+             (* l_1 m_2 (expt thetadot_1 2) (sin theta_2) (cos theta_2))
+             (* -1 l_2 m_2 (expt thetadot_2 2) (cos theta_1) (sin theta_2))
+             (* l_2 m_2 (expt thetadot_2 2) (sin theta_1) (cos theta_2))
+             (* -1 g m_2 (cos theta_1) (sin theta_2) (cos theta_2))
+             (* g m_2 (sin theta_1) (expt (cos theta_2) 2))
+             (* g m_1 (sin theta_1)))
+          (+ (* 2 l_1 m_2 (cos theta_1) (cos theta_2) (cos (+ theta_1 (* -1 theta_2))))
+             (* -1 l_1 m_2 (expt (cos theta_1) 2))
+             (* -1 l_1 m_2 (expt (cos theta_2) 2))
+             (* -1 l_1 m_1)))
+       (/ (+ (* 2N l_2 m_2 (expt thetadot_2 2) (expt (cos theta_1) 2) (sin theta_2) (cos theta_2))
+             (* -2N l_2 m_2 (expt thetadot_2 2) (cos theta_1) (sin theta_1) (expt (cos theta_2) 2))
+             (* l_1 m_1 (expt thetadot_1 2) (cos theta_1) (sin theta_2))
+             (* -1 l_1 m_1 (expt thetadot_1 2) (sin theta_1) (cos theta_2))
+             (* l_1 m_2 (expt thetadot_1 2) (cos theta_1) (sin theta_2))
+             (* -1 l_1 m_2 (expt thetadot_1 2) (sin theta_1) (cos theta_2))
+             (* l_2 m_2 (expt thetadot_2 2) (cos theta_1) (sin theta_1))
+             (* -1 l_2 m_2 (expt thetadot_2 2) (sin theta_2) (cos theta_2))
+             (* g m_1 (expt (cos theta_1) 2) (sin theta_2))
+             (* -1 g m_1 (cos theta_1) (sin theta_1) (cos theta_2))
+             (* g m_2 (expt (cos theta_1) 2) (sin theta_2))
+             (* -1 g m_2 (cos theta_1) (sin theta_1) (cos theta_2)))
+          (+ (* 2 l_2 m_2 (cos theta_1) (cos theta_2) (cos (+ theta_1 (* -1 theta_2))))
+             (* -1 l_2 m_2 (expt (cos theta_1) 2))
+             (* -1 l_2 m_2 (expt (cos theta_2) 2))
+             (* -1 l_2 m_1)))))
