@@ -874,3 +874,27 @@
                        (s/down -36 192 -180)
                        (s/down 30 -180 180))
                (g/divide H)))))))
+
+(deftest kronecker-product
+  (testing "Kronecker product, ⊗, of two matrices producing Block Matrix"
+    (let [A (m/by-rows [1 3 2]
+                       [2 3 1])
+          B (m/by-rows [1 6]
+                       [0 1])]
+      (is (= (m/matrix->vector
+              (m/fmap m/matrix->vector
+                      (m/kronecker-product A B)))
+           [[[[1 6][0 1]] [[3 18][0 3]] [[2 12] [0 2]]]
+            [[[2 12] [0 2]] [[3 18][0 3]] [[1 6][0 1]]]])))))
+
+(deftest direct-sum
+  (testing "Direct sum, ⊕, of two matrices"
+  (is (= (m/matrix->vector (m/dim-sum
+                            (m/by-rows [1 3 2]
+                                       [2 3 1])
+                            (m/by-rows [1 6]
+                                       [0 1])))
+         [[1 3 2 0 0]
+          [2 3 1 0 0]
+          [0 0 0 1 6]
+          [0 0 0 0 1]]))))

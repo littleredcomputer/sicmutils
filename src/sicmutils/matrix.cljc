@@ -321,12 +321,18 @@
   only one index is required to get an unboxed element from a column vector.
 
   NOTE that this is perhaps an unprincipled exception..."
-  [m is]
-  (let [e (core-get-in m is)]
-    (if (and (column? m)
-             (= 1 (count is)))
-      (e 0)
-      e)))
+  ([m is]
+   (let [e (core-get-in m is)]
+     (if (and (column? m)
+              (= 1 (count is)))
+       (e 0)
+       e)))
+  ([m is not-found]
+   (let [e (core-get-in m is not-found)]
+   (if (and (column? m)
+            (= 1 (count is)))
+     (e 0)
+     e))))
 
 (defn some
   "Returns true if `f` is true for some element of the matrix `m`, false
@@ -712,7 +718,7 @@
   (->Matrix (dec (num-rows m))
             (dec (num-cols m))
             (mapv #(delete % j)
-                  (delete m i))) )
+                  (delete m i))))
 
 (defn- checkerboard-negate [s i j]
   (if (even? (+ i j))
@@ -860,6 +866,31 @@
         c (num-cols m)]
     (when-not (= r c) (u/illegal "not square"))
     (determinant (g/- (g/* x (I r)) m))))
+
+(defn kronecker-product
+  "Computes a block matrix by mapping over the left matrix, multiplying elementwise
+by the right matrix."
+  [matrix-A matrix-B]
+  (fmap (fn [x] (g/* x matrix-B)) matrix-A))
+
+(defn direct-sum
+  "Initial implementation of Direct Sum. "
+  [matrix-A matrix-B]
+  (let [new-row-count (+ (num-rows matrix-A) (num-rows matrix-B))
+        new-col-count (+ (num-cols matrix-A) (num-cols matrix-B))
+        B-row-offset  (- new-row-count (num-rows matrix-B))
+        B-col-offset  (- new-col-count (num-cols matrix-B))]
+    (generate new-row-count
+              new-col-count
+              (fn [i j]
+                (if (or
+                     (< i B-row-offset)
+                     (< j B-col-offset))
+                  (get-in matrix-A [i j] 0)
+                  (get-in matrix-B
+                          [(- i B-row-offset)
+                           (- j B-col-offset)]
+                          0))))))
 
 ;; ## Generic Operation Installation
 
