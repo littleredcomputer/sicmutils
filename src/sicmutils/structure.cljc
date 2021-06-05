@@ -797,7 +797,7 @@
   (assert (= (count v1) (count v2))
           (str "Not same dimension -- v:dot-product"
                v1 ", " v2))
-  (reduce g/+ (map g/* v1 v2)))
+  (apply g/+ (map g/* v1 v2)))
 
 (defn vector-inner-product
   "Returns the (vector) inner product of `v1` and `v2`; this is equivalent to the

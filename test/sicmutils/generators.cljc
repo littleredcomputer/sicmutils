@@ -17,6 +17,8 @@
             [sicmutils.numsymb :as sym]
             [sicmutils.polynomial :as poly]
             [sicmutils.polynomial.exponent :as xpt]
+            [sicmutils.quaternion :as quat
+             #?@(:cljs [:refer [Quaternion]])]
             [sicmutils.ratio :as r]
             [sicmutils.rational-function :as rf]
             [sicmutils.series :as ss]
@@ -25,7 +27,8 @@
             [sicmutils.util.vector-set :as vs]
             [sicmutils.value :as v])
   #?(:clj
-     (:import (org.apache.commons.math3.complex Complex))))
+     (:import (org.apache.commons.math3.complex Complex)
+              (sicmutils.quaternion Quaternion))))
 
 (def bigint
   "js/BigInt in cljs, clojure.lang.BigInt in clj."
@@ -125,6 +128,18 @@
 
 (def number
   (gen/one-of [real complex]))
+
+;; ## Quaternions
+
+(defn quaternion
+  "TODO modify this to kick out more mixed etc!"
+  ([] (quaternion (reasonable-double)))
+  ([coeff-gen]
+   (gen/let [r coeff-gen
+             i coeff-gen
+             j coeff-gen
+             k coeff-gen]
+     (quat/make r i j k))))
 
 ;; ## Modular Arithmetic
 
@@ -275,14 +290,14 @@
 (defn differential
   "Returns a generator that produces proper instances of [[d/Differential]]."
   ([] (differential real))
-  ([coef-gen]
+  ([coeff-gen]
    (let [term-gen   (gen/let [tags (vector-set gen/nat)
-                              coef coef-gen]
+                              coef coeff-gen]
                       (let [tags (if (empty? tags) [0] tags)
                             coef (if (v/zero? coef) 1 coef)]
                         (#'d/make-term tags coef)))]
      (gen/let [terms  (gen/vector term-gen 1 5)
-               primal coef-gen]
+               primal coeff-gen]
        (let [tangent-part (d/from-terms terms)
              ret          (d/d:+ primal tangent-part)]
          (cond (d/differential? ret)          ret
@@ -299,9 +314,9 @@
 (defn poly:terms
   ([arity]
    (poly:terms arity small-integral))
-  ([arity coef-gen & opts]
+  ([arity coeff-gen & opts]
    (let [expt-gen (poly:exponents arity)
-         term-gen (gen/tuple expt-gen coef-gen)]
+         term-gen (gen/tuple expt-gen coeff-gen)]
      (apply gen/vector term-gen opts))))
 
 (defn polynomial
@@ -404,12 +419,35 @@
   #?(:cljs c/complextype :clj Complex)
   (ish [this that]
     (cond (c/complex? that)
-          (and (si/*comparator* (g/real-part this)
-                                (g/real-part that))
-               (si/*comparator* (g/imag-part this)
-                                (g/imag-part that)))
+          (and (si/*comparator* (c/real this)
+                                (c/real that))
+               (si/*comparator* (c/imaginary this)
+                                (c/imaginary that)))
           (v/real? that)
-          (and (si/*comparator* 0.0 (g/imag-part this))
+          (and (si/*comparator* 0.0 (c/imaginary this))
                (si/*comparator*
-                (g/real-part this) (u/double that)))
+                (c/real this) (u/double that)))
+          :else (v/= this that)))
+
+  Quaternion
+  (ish [this that]
+    (cond (quat/quaternion? that)
+          (and (si/*comparator* (quat/get-r this) (quat/get-r that))
+               (si/*comparator* (quat/get-i this) (quat/get-i that))
+               (si/*comparator* (quat/get-j this) (quat/get-j that))
+               (si/*comparator* (quat/get-k this) (quat/get-k that)))
+
+          (c/complex? that)
+          (and (si/*comparator* 0.0 (quat/get-j this))
+               (si/*comparator* 0.0 (quat/get-k this))
+               (si/*comparator* (quat/get-r this) (c/real that))
+               (si/*comparator* (quat/get-i this) (c/imaginary that)))
+
+          (v/real? that)
+          (and (si/*comparator* 0.0 (quat/get-i this))
+               (si/*comparator* 0.0 (quat/get-j this))
+               (si/*comparator* 0.0 (quat/get-k this))
+               (si/*comparator*
+                (quat/get-r this) (u/double that)))
+
           :else (v/= this that))))

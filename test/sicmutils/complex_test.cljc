@@ -87,6 +87,15 @@
 
 (let [pi Math/PI]
   (deftest complex-numbers
+    (testing "v/="
+      (is (v/= #sicm/complex "1+0i" #sicm/bigint 1))
+      (is (not (v/= #sicm/complex "1+2i" #sicm/ratio "1/2")))
+
+      #?(:cljs
+         (testing "CLJS can compare complex with non-complex using clojure.core/="
+           (is (= #sicm/complex "1+0i" #sicm/bigint 1))
+           (is (not= #sicm/complex "1+2i" #sicm/ratio "1/2")))))
+
     (testing "complex constructor and predicate"
       (is (c/complex? c/ONE))
       (is (c/complex? c/I))

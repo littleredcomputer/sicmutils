@@ -2,13 +2,16 @@
 
 ## [unreleased]
 
+- #361 - quaternions!
+
 ## 0.19.0
 
 > (If you have any questions about how to use any of the following, please ask us
 > at our [Github Discussions](https://github.com/sicmutils/sicmutils/discussions)
 > page!)
 
-This release focused on improving the expressiveness and performance of the three simplification engines in SICMUtils:
+This release focused on improving the expressiveness and performance of the
+three simplification engines in SICMUtils:
 
   - `sicmutils.polynomial` and `sicmutils.rational-function` are now quite well
     fleshed out, with full polynomial and rational function APIs and many

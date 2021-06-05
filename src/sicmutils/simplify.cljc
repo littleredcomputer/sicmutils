@@ -207,3 +207,63 @@
                              (simplify-and-canonicalize simplify-and-flatten)))
                 simplify-and-flatten)]
       (simple expr))))
+
+(comment
+  ;; TODO I THINK we have actual thing somewhere else. We want this dynamic
+  ;; variable around.
+  (def ^:dynamic *factoring* false)
+
+  ;; Hamiltonians look better if we divide them out.
+  (defn ham:simplify [hexp]
+    (cond (and (quotient? hexp) *divide-out-terms*)
+          (if (sum? (symb:numerator hexp))
+            (let [d (symb:denominator hexp)]
+              (a-reduce symb:+
+                        (map (fn [n]
+                               (g/simplify (symb:div n d)))
+                             (operands
+                              (symb:numerator hexp)))))
+            hexp)
+
+          (compound-data-constructor? hexp)
+          (cons (operator hexp) (map ham:simplify (operands hexp)))
+
+          :else hexp))
+
+  (define clean-differentials
+    ;; TODO clean a CLEANED differential... aren't these all done??
+    (rule-simplifier
+     (ruleset
+      (make-differential-quantity
+       [??lterms
+        (make-differential-term (? dx) 0)
+        ??rterms])
+      =>
+      (make-differential-quantity [??lterms ??rterms])
+
+      (make-differential-quantity
+       [(make-differential-term '() ?x)]) => ?x
+
+      (make-differential-quantity []) => 0)))
+
+  (define (flush-literal-function-constructors expr)
+    (if (pair? expr)
+      (if (eq? (car expr) 'literal-function)
+        (if (and (pair? (cadr expr)) (eq? (caadr expr) 'quote))
+          (flush-literal-function-constructors (cadadr expr))
+          (cadr expr))
+        (cons (flush-literal-function-constructors (car expr))
+              (flush-literal-function-constructors (cdr expr))))
+      expr))
+
+  (defn simplify [exp]
+    ((access clean-differentials rule-environment)
+     (flush-derivative
+      (flush-literal-function-constructors
+       (ham:simplify
+        ((if *factoring* poly:factor (fn [expr] expr))
+         (g:simplify exp)))))))
+
+  ;; Is this enough? move to simplify.
+  (define (careful-simplify e)
+    (simplify e)))
