@@ -1,21 +1,21 @@
-;
-; Copyright © 2017 Colin Smith.
-; This work is based on the Scmutils system of MIT/GNU Scheme:
-; Copyright © 2002 Massachusetts Institute of Technology
-;
-; This is free software;  you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 3 of the License, or (at
-; your option) any later version.
-;
-; This software is distributed in the hope that it will be useful, but
-; WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-; General Public License for more details.
-;
-; You should have received a copy of the GNU General Public License
-; along with this code; if not, see <http://www.gnu.org/licenses/>.
-;
+;;
+;; Copyright © 2017 Colin Smith.
+;; This work is based on the Scmutils system of MIT/GNU Scheme:
+;; Copyright © 2002 Massachusetts Institute of Technology
+;;
+;; This is free software;  you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3 of the License, or (at
+;; your option) any later version.
+;;
+;; This software is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this code; if not, see <http://www.gnu.org/licenses/>.
+;;
 
 (ns sicmutils.mechanics.hamilton-test
   (:refer-clojure :exclude [+ - * / partial])
@@ -89,9 +89,9 @@
                (up 't (up 'x 'y) (down 'p_x 'p_y))))))
       (testing "Jacobi identity"
         (is (= 0 (simplify ((+ (H/Poisson-bracket FF (H/Poisson-bracket GG HH))
-                                 (H/Poisson-bracket GG (H/Poisson-bracket HH FF))
-                                 (H/Poisson-bracket HH (H/Poisson-bracket FF GG)))
-                              (up 't (up 'x 'y) (down 'p_x 'p_y))))))))))
+                               (H/Poisson-bracket GG (H/Poisson-bracket HH FF))
+                               (H/Poisson-bracket HH (H/Poisson-bracket FF GG)))
+                            (up 't (up 'x 'y) (down 'p_x 'p_y))))))))))
 
 (deftest section-3-1-1
   ;; To move further into Hamiltonian mechanics, we will need
@@ -129,6 +129,72 @@
                        (L/L-rectangular 'm V))
                       (up 't (up 'x 'y) (down 'p_x 'p_y))))))))
 
+(deftest litfun-tests
+  (testing "similar test from litfun.scm"
+    (let [H (f/literal-function 'H '(-> (UP Real (UP* Real 2) (DOWN* Real 2)) Real))]
+      (is (= '(up 0
+                  (up
+                   (+ ((D x) t)
+                      (* -1 (((partial 2 0) H) (up t (up (x t) (y t)) (down (p_x t) (p_y t))))))
+                   (+ ((D y) t)
+                      (* -1 (((partial 2 1) H) (up t (up (x t) (y t)) (down (p_x t) (p_y t)))))))
+                  (down
+                   (+ ((D p_x) t)
+                      (((partial 1 0) H) (up t (up (x t) (y t)) (down (p_x t) (p_y t)))))
+                   (+ ((D p_y) t)
+                      (((partial 1 1) H) (up t (up (x t) (y t)) (down (p_x t) (p_y t)))))))
+             (g/simplify
+              (((H/Hamilton-equations H)
+                (L/coordinate-tuple (f/literal-function 'x)
+                                    (f/literal-function 'y))
+                (H/momentum-tuple (f/literal-function 'p_x)
+                                  (f/literal-function 'p_y)))
+               't))))))
+
+  (comment
+    (let [Lf (f/literal-function 'L (f/Lagrangian))]
+
+      (Lf (L/->L-state 't 'x 'v))
+      #_(Lf (up t x v))
+
+      ((D Lf) (L/->L-state 't 'x 'v))
+      #_(down (((partial 0) L) (up t x v))
+              (((partial 1) L) (up t x v))
+              (((partial 2) L) (up t x v)))
+
+      (Lf (L/->L-state 't (up 'x 'y) (up 'v_x 'v_y)))
+      #_(L (up t (up x y) (up v_x v_y)))
+
+      ((D Lf) (L/->L-state 't (up 'x 'y) (up 'v_x 'v_y)))
+      #_(down
+         (((partial 0) L) (up t (up x y) (up v_x v_y)))
+         (down (((partial 1 0) L) (up t (up x y) (up v_x v_y)))
+               (((partial 1 1) L) (up t (up x y) (up v_x v_y))))
+         (down (((partial 2 0) L) (up t (up x y) (up v_x v_y)))
+               (((partial 2 1) L) (up t (up x y) (up v_x v_y))))))
+
+
+    (let [Hf (f/literal-function 'H (f/Hamiltonian))]
+
+      (Hf (H/->H-state 't 'x 'p))
+      #_(Hf (up t x p))
+
+      ((D H) (H/->H-state 't 'x 'p))
+      #_(down (((partial 0) H) (up t x p))
+              (((partial 1) H) (up t x p))
+              (((partial 2) H) (up t x p)))
+
+      (H (H/->H-state 't (up 'x 'y) (down 'p_x 'p_y)))
+      #_(H (up t (up x y) (down p_x p_y)))
+
+      ((D H) (H/->H-state 't (up 'x 'y) (down 'p_x 'p_y)))
+      #_(down
+         (((partial 0) H) (up t (up x y) (down p_x p_y)))
+         (down (((partial 1 0) H) (up t (up x y) (down p_x p_y)))
+               (((partial 1 1) H) (up t (up x y) (down p_x p_y))))
+         (up (((partial 2 0) H) (up t (up x y) (down p_x p_y)))
+             (((partial 2 1) H) (up t (up x y) (down p_x p_y))))))))
+
 (deftest gjs-tests
   (is (= '(up 0
               (up (/ (+ (* m ((D x) t)) (* -1 (p_x t))) m)
@@ -138,8 +204,7 @@
 
          (f/with-literal-functions [x y p_x p_y [V [0 1] 2]]
            (simplify (((H/Hamilton-equations
-                        (H/H-rectangular
-                         'm V))
+                        (H/H-rectangular 'm V))
                        (L/coordinate-tuple x y)
                        (H/momentum-tuple p_x p_y))
                       't)))))
