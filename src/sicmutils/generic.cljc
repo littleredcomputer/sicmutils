@@ -354,6 +354,24 @@
 
 (defgeneric abs 1)
 
+(defgeneric sgn 1
+  "Return the sign of `a`: (-1, 0, or 1).")
+
+;; Implement for:
+;;
+;; - ratio
+;; - integer
+;; - real numbers
+;; - complex, using https://en.wikipedia.org/wiki/Sign_function#Complex_signum
+;; - symbolic
+;; - differential
+;; - add tests from the wiki page
+
+(defmethod sgn :default [x]
+  (cond (v/zero? x)            0
+        (pos? (v/compare x 0)) 1
+        :else                 -1))
+
 (declare integer-part)
 
 (defgeneric floor 1
