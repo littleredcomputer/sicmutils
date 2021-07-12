@@ -93,16 +93,29 @@
 (defmethod g/angle [::complex] [^Complex a] (#?(:clj .getArgument :cljs .arg) a))
 (defmethod g/conjugate [::complex] [^Complex a] (.conjugate a))
 
-(def ^{:doc "Parser that converts a string representation of a complex number,
-  like `1 + 3i`, into a [[Complex]] number object in clj or cljs."}
-  parse-complex
-  #?(:clj (let [cf (ComplexFormat.)]
-            (fn [s]
-              (let [v (.parse cf s)]
-                `(complex ~(real v)
-                          ~(imaginary v)))))
+(#?@(:clj [let [cf (ComplexFormat.)]]
+     :cljs [do])
+ (defn parse-complex [x]
+   "Parser that converts a string representation of a complex number,
+  like `1 + 3i`, into a [[Complex]] number object in clj or cljs."
+   (cond (string? x)
+         #?(:clj
+            (let [v (.parse cf x)]
+              `(complex ~(real v)
+                        ~(imaginary v)))
+            :cljs `(complex ~x))
 
-     :cljs (fn [s] `(complex ~s))))
+         (vector? x)
+         (let [[re im] x]
+           (if (or (nil? im)
+                   (v/zero? im))
+             re
+             `(complex ~re ~im)))
+
+         (number? x) x
+
+         :else (u/illegal
+                (str "Complex literals must be either strings or vectors. Received: " x)))))
 
 #?(:cljs
    (extend-type Complex
@@ -119,16 +132,17 @@
 
      IPrintWithWriter
      (-pr-writer [x writer opts]
-       (write-all writer "#sicm/complex \"" (.toString x) "\""))))
+       (write-all
+        writer
+        "#sicm/complex "
+        (str [(obj/get x "re")
+              (obj/get x "im")])))))
 
 #?(:clj
-   ;; Clojure implementation of a printer that will emit items that can
-   ;; round-trip via #sicm/complex.
-   (let [cf (ComplexFormat.)]
-     (defmethod print-method Complex [^Complex v ^java.io.Writer w]
-       (.write w (str "#sicm/complex \""
-                      (.format cf v)
-                      "\"")))))
+   (defmethod print-method Complex [^Complex v ^java.io.Writer w]
+     (.write w (str "#sicm/complex "
+                    [(.getReal v)
+                     (.getImaginary v)]))))
 
 (extend-type Complex
   v/Numerical

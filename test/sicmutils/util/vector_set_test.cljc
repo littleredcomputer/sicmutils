@@ -79,7 +79,7 @@
               (is (= v1
                      (vs/symmetric-difference v1 [])
                      (vs/symmetric-difference [] v1))
-                  "empy set is neutral")
+                  "empty set is neutral")
 
               (is (= [] (vs/symmetric-difference v1 v1))
                   "every set is its own inverse")

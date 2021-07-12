@@ -92,26 +92,6 @@
                      increment))))]
     (lp1 permuted-list 0)))
 
-(defn- same-set?
-  "Returns true if `x1` and `x2` contain the same elements, false otherwise."
-  [x1 x2]
-  (= (set x1) (set x2)))
-
-(defn permutation-parity
-  "Given a `permuted-list` and the `original-list`, returns the parity (1 for
-  even, -1 for odd) of the number of the number of interchanges required to
-  generate the permuted list from the original list.
-
-  If the two items "
-  [permuted-list original-list]
-  (if (and (= (count permuted-list)
-              (count original-list))
-           (same-set? permuted-list original-list))
-    (if (even? (list-interchanges permuted-list original-list))
-      1
-      -1)
-    0))
-
 (defn permutation-interchanges [permuted-list]
   (letfn [(lp1 [plist n]
             (if (empty? plist)
@@ -127,6 +107,34 @@
                      increment
                      (inc increment)))))]
     (lp1 permuted-list 0)))
+
+(defn- same-set?
+  "Returns true if `x1` and `x2` contain the same elements, false otherwise."
+  [x1 x2]
+  (= (sort-by hash x1)
+     (sort-by hash x2)))
+
+(defn permutation-parity
+  "If a single `permuted-list` is supplied, returns the parity of the number of
+  interchanges required to sort the permutation.
+
+  For two arguments, given a `permuted-list` and the `original-list`, returns
+  the parity (1 for even, -1 for odd) of the number of the number of
+  interchanges required to generate the permuted list from the original list.
+
+  In the two-argument case, if the two lists aren't permutations of each other,
+  returns 0."
+  ([permuted-list]
+   (let [swaps (permutation-interchanges permuted-list)]
+     (if (even? swaps) 1 -1)))
+  ([permuted-list original-list]
+   (if (and (= (count permuted-list)
+               (count original-list))
+            (same-set? permuted-list original-list))
+     (if (even? (list-interchanges permuted-list original-list))
+       1
+       -1)
+     0)))
 
 (defn permute
   "Given a `permutation` (represented as a list of numbers), and a sequence `xs`
