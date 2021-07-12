@@ -861,6 +861,57 @@
     (when-not (= r c) (u/illegal "not square"))
     (determinant (g/- (g/* x (I r)) m))))
 
+;; ## Solving
+
+(defn cramers-rule
+  "Linear equations solved by Cramer's rule.
+
+   Solves an inhomogeneous system of linear equations, `A*x=b`, where the matrix
+   `A` and the column matrix `b` are given.
+
+   returns the column matrix `X`.
+
+   Unlike LU decomposition, Cramer's rule generalizes to symbolic solutions."
+  [A b]
+  {:pre [(square? A)
+         (column? b)
+         (= (dimension A) (num-rows b))]}
+  (let [bv (nth-col b 0)
+        d  (determinant A)
+        At (transpose A)]
+    (column*
+     (mapv (fn [i]
+             (g/div (determinant
+                     (with-substituted-row At i bv))
+                    d))
+           (range bv)))))
+
+(defn solve [A b]
+  (cramers-rule A b))
+
+(defn rsolve [b A]
+  (cond (s/up? b)   (column-matrix->up
+                     (solve A (up->column-matrix b)))
+        (column? b) (solve A b)
+        (s/down? b) (row-matrix->down
+                     (transpose
+                      (solve (transpose A)
+                             (transpose
+                              (down->row-matrix b)))))
+        (row? b)
+        (transpose
+         (solve (transpose A)
+                (transpose b)))
+        :else (u/illegal (str "I don't know how to solve:" b A))))
+
+(defmethod g/solve-linear [::square-matrix ::s/up] [A b] (rsolve b A))
+(defmethod g/solve-linear [::square-matrix ::s/down] [A b] (rsolve b A))
+(defmethod g/solve-linear [::square-matrix ::column-matrix] [A b] (rsolve b A))
+(defmethod g/solve-linear [::square-matrix ::row-matrix] [A b] (rsolve b A))
+
+(defmethod g/solve-linear-right [::row-matrix ::square-matrix] [b A] (rsolve b A))
+(defmethod g/solve-linear-right [::down ::square-matrix] [b A] (rsolve b A))
+
 ;; ## Generic Operation Installation
 
 (defmethod g/negate [::matrix] [a] (fmap g/negate a))
