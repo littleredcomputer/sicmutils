@@ -140,8 +140,11 @@
 (def Γ Gamma)
 
 (defn Lagrangian-action
-  [L q t1 t2]
-  (q/definite-integral (compose L (Γ q)) t1 t2 {:compile? false}))
+  ([L q t1 t2]
+   (Lagrangian-action L q t1 t2 {}))
+  ([L q t1 t2 integration-opts]
+   (q/definite-integral
+     (compose L (Γ q)) t1 t2 integration-opts)))
 
 (defn Lagrange-equations
   [Lagrangian]
